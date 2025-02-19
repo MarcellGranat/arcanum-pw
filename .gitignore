@@ -10,3 +10,11 @@ wheels/
 .venv
 .arcanum_secrets
 cookies/
+cookies_raw/
+*log
+*txt
+data*
+wip*
+*png
+.vscode*
+*log.json
