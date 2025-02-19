@@ -42,4 +42,9 @@ def convert_cookie_txt_to_json(txt_file_path: str, json_file_path: str):
         file.write(json.dumps(list_of_cookies, indent=4))
 
 # Convert the specific file
-# convert_cookie_txt_to_json("/Users/marci/projects/arcanum-pw/cookies_raw/marcigranat.txt", "/Users/marci/projects/arcanum-pw/cookies/marcigranat.json")
+if __name__ == "__main__":
+    import os
+    raw_cookies = os.listdir("cookies_raw")
+
+    for cookie in raw_cookies:
+        convert_cookie_txt_to_json(f"cookies_raw/{cookie}", f"cookies/{cookie.replace('.txt', '.json')}")
