@@ -16,9 +16,7 @@ for i in range(len(userdata) // 4 + 1):
 pw = sync_playwright().start()
 
 for user in users:
-    browser = pw.firefox.launch(
-        headless=False, slow_mo=1000
-    )
+    browser = pw.firefox.launch(headless=False, slow_mo=1000)
 
     context = browser.new_context()
     page = context.new_page()
@@ -44,10 +42,15 @@ for user in users:
     page.get_by_role("button").click()
     page.screenshot(path="login.png")
 
-    # TODO save cookies
     user_hash = hash(user["username"] + user["password"])
-    os.mkdir("cookies")
-    with open("cookies/" + str(user_hash) + ".json", "w") as f:
+    if not os.path.exists("cookies"):
+        os.mkdir("cookies")
+    filename = (
+        user["username"]
+        .replace("@", "_")
+        .removesuffix(".hu")
+    )
+    with open("cookies/" + filename + ".json", "w") as f:
         f.write(json.dumps(context.cookies()))
     
     browser.close()
