@@ -15,6 +15,9 @@ dependencies = [
     "aiofiles>=24.1.0",
     "requests>=2.32.3",
     "bs4>=0.0.2",
+    "checksumdir>=1.2.0",
+    "setuptools>=75.8.0",
+    "xxhash>=3.5.0",
 ]
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
