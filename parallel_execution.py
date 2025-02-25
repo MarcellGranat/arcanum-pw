@@ -1,4 +1,7 @@
 import asyncio
+from loguru import logger
+
+logger.add("logs")
 
 async def worker(func, config, queue, results):
     """Worker that processes items from the queue."""
@@ -32,5 +35,5 @@ async def parallel_exec(func, configs, items):
 
     # Wait until all workers are cancelled
     await asyncio.gather(*workers, return_exceptions=True)
-    print("All workers are done.")
+    logger.success(f"{func.__name__} finished in parrallel mode.")
     return results
