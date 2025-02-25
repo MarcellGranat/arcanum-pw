@@ -4,13 +4,11 @@ import os
 from loguru import logger
 from datetime import datetime, timedelta
 import aiofiles
+import asyncio
 import json
+from log_download import log_download
 
-logger.add("download_log.json", serialize=True, enqueue=True, level="INFO")
-
-async def log_download(username: str = "unknown", page_count: int = 0, path: str = "") -> None:
-    """Log the number of pages downloaded by a user."""
-    logger.info({"user": username, "pages_downloaded": page_count, "timestamp": datetime.now().isoformat(), "path": path})
+logger.add("logs")
 
 async def get_downloads_last_24h(username: str = "unknown") -> int:
     """Check the number of pages downloaded in the last 24 hours."""
@@ -38,9 +36,18 @@ async def download_from_to(page, start: int, end: int, path: str) -> None:
     async with page.expect_download() as download_info:
         async with page.expect_popup() as page1_info:
             await page.get_by_role("button", name="Mentés").click()
-        page1 = await page1_info.value
+            page1 = await page1_info.value
         download = await download_info.value
-        await download.save_as(path)
+
+        for attempt in range(5): # try to save it 5 times
+            try:
+                await download.save_as(path)
+                break 
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1}: Failed to save file - {e}")
+                await asyncio.sleep(2)  # Wait before retrying
+            if attempt == 4:
+                raise FileNotFoundError(f"Failed to save file after 5 attempts - {path}")
     await page1.close()
 
 async def current_page(page):
