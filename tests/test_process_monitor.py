@@ -4,6 +4,7 @@ from process_monitor import monitor_process, hash_folder
 from start_arcanum import arcanum_page
 import tempfile
 from functools import partial
+import os
 
 @pytest.mark.asyncio
 async def test_restart_behavior():
@@ -52,24 +53,26 @@ async def test_restart_behavior():
 async def test_restart_browser():
     i = 0
     write_file = True
+    n_open = 0
 
     with tempfile.TemporaryDirectory() as temp_dir:
         async def worker(name):
             nonlocal i
             nonlocal write_file
             nonlocal temp_dir
+            nonlocal n_open
 
             while i < 5:
                 i += 1
-                async with arcanum_page(headless=True) as page:
+                async with arcanum_page(headless=False) as page:
+                    n_open += 1
                     await page.goto("https://adt.arcanum.com/en/discover/")
-
+                    await asyncio.sleep(2)
                     if write_file:
                         with open(temp_dir + "/test" + name + ".txt", "w") as f:
                             f.write("Hello, World!")
                         print("writing")
                         write_file = False
-                    asyncio.sleep(10)
             print(f"Worker {name} finished. {i=}")
             return
 
@@ -87,7 +90,10 @@ async def test_restart_browser():
             await process_a()
 
         await main()
-            
+
+        assert i == 5  # Assert that the process was restarted
+        assert len(os.listdir(temp_dir)) == 1
+        assert n_open == 4
 
             
 
