@@ -25,28 +25,32 @@ def hash_folder(folder_path: str = "data"):
     return hasher.hexdigest()
 
 def monitor_process(check_function, timeout=300):
-    """Decorator that monitors a process and restarts it if the check_function returns the same value for `timeout` seconds."""
+    """Decorator that monitors a process and restarts it if it is stuck, but stops if the process exits naturally."""
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            last_value = check_function()  # Get initial monitored value
-            process_task = asyncio.create_task(func(*args, **kwargs))  # Start the process
+            last_value = check_function()
+            process_task = asyncio.create_task(func(*args, **kwargs))
 
-            while not process_task.done():  # Keep monitoring while process is running
-                await asyncio.sleep(timeout)  # Wait for `timeout` seconds
+            while not process_task.done():  # Monitor while process is running
+                await asyncio.sleep(timeout)
 
-                current_value = check_function()  # Get updated value
-                if current_value == last_value:  # Value unchanged
+                if process_task.done():  # If process has exited, stop monitoring
+                    logger.success(f"Monitor: {func.__name__} finished naturally. Stopping monitor.")
+                    break
+
+                current_value = check_function()
+                if current_value == last_value:  # If monitored value is unchanged
                     logger.warning(f"Process {func.__name__} seems unresponsive. Restarting...")
                     process_task.cancel()
                     try:
-                        await process_task  # Ensure cleanup
+                        await process_task  # Cleanup
                     except asyncio.CancelledError:
                         pass
                     process_task = asyncio.create_task(func(*args, **kwargs))  # Restart process
                 
-                last_value = current_value  # Update last observed value
-            
+                last_value = current_value  # Update the last observed value
+
             logger.success(f"Monitor: {func.__name__} finished, stopping monitor.")
         
         return wrapper
