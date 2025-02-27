@@ -11,6 +11,7 @@ async def test_restart_behavior():
     # Simulated shared value
     monitored_value = 0  # Global variable to simulate retrieval
     start_process = 0
+    n_call = 0
 
     def retrieve_value():
         return monitored_value  # This function will be passed as the monitor function
@@ -20,14 +21,18 @@ async def test_restart_behavior():
         """Simulated process with workers modifying a shared value."""
         nonlocal monitored_value
         workers = [asyncio.create_task(worker(i)) for i in range(3, 5)]
+        nonlocal n_call
+        n_call += 1
         await asyncio.gather(*workers)
 
     async def worker(threshold):
         nonlocal monitored_value
         nonlocal start_process
+        nonlocal n_call
         start_process = monitored_value
         i = 0
         while True:
+            n_call += 1
             await asyncio.sleep(1)
             if monitored_value > 9:
                 break  # Stop if value exceeds 10
@@ -48,6 +53,11 @@ async def test_restart_behavior():
 
     assert monitored_value == 10  # Assert that the process was restarted
     assert start_process == 5  # 3: updates 2 times, 4: updates 3 times before quitting > 5
+    # first 2 call: 5 sec x 2 = 10 updates
+    # next 2 call: 5 sec x 2 = 10 updates
+    # first 2 if does not stop the process => 2 x 5 = 10 updates
+    # 20 updates if stopped, 30 if not stopped
+    assert n_call == 20  # 1 initial call + 10 updates
 
 @pytest.mark.asyncio
 async def test_restart_browser():
