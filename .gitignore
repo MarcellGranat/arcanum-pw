@@ -18,6 +18,5 @@ wip*
 *png
 .vscode*
 *log.json
-tests/test_cookies/marcigranat.json
-tests/test_cookies/corrupt.json
+tests/test_cookies/
 logs
