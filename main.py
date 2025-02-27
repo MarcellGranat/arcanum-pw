@@ -1,11 +1,10 @@
-import parallel_execution
 import start_arcanum
 import asyncio
 import download
 import os
 from manage_cookie import init_cookies, read_cookie
 from loguru import logger
-from process_monitor import monitor_process, hash_folder
+from process_manager import ProcessManager, hash_folder
 import time
 
 logger.add("logs")
@@ -24,7 +23,7 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
     
     cookie = await read_cookie(username)
 
-    async with start_arcanum.arcanum_page(cookie, headless=True) as page:
+    async with start_arcanum.arcanum_page(cookie, headless=False) as page:
         logger.info(f"Going to {archive[1]} ({username})")
         while True:
             try:
@@ -52,12 +51,8 @@ def is_working():
         waiting_for_limit = False
     return hash_folder(folder_path="data")
 
-
-@monitor_process(is_working, timeout=600)
-async def parallel_scrape_page_along_tree(tuples_list):
+async def users():
     usernames = []
-    if not os.path.exists("data"):
-        os.mkdir("data")
 
     cookies = await init_cookies(check=True, force=False)
 
@@ -80,9 +75,12 @@ async def parallel_scrape_page_along_tree(tuples_list):
         global waiting_for_limit
         waiting_for_limit = True
         # TODO send notification
-    
-    logger.info(f"Using users: {usernames}")
-    await parallel_execution.parallel_exec(func=scrape_page_along_tree, configs=usernames, items=tuples_list)
+
+    return usernames
+
+def main(items=None):
+    process = ProcessManager(preprocess=users, func=scrape_page_along_tree, items=urls, check_function=is_working, timeout=300)
+    asyncio.run(process.run())
     logger.success("All archives downloaded")
 
 if __name__ == "__main__":
@@ -91,4 +89,4 @@ if __name__ == "__main__":
     urls20s = list(archive_links.generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1920#collection-contents"))
     urls10s = list(archive_links.generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1910#collection-contents"))
     urls = urls30s + urls20s + urls10s
-    asyncio.run(parallel_scrape_page_along_tree(tuples_list=urls))
+    main(items=urls)
