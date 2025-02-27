@@ -6,6 +6,7 @@ from manage_cookie import init_cookies, read_cookie
 from loguru import logger
 from process_manager import ProcessManager, hash_folder
 import time
+from pypushover import notify_after_elapsed_time, send_message
 
 logger.add("logs")
 
@@ -44,11 +45,13 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
             break
 
 def is_working():
+    notify_after_elapsed_time("Still scraping", title="Arcanum", elapsed_time=36000, init=True)
     global waiting_for_limit
     if waiting_for_limit:
         time.sleep(3600 * 4)
         logger.info("Waiting for download limit to reset")
         waiting_for_limit = False
+
     return hash_folder(folder_path="data")
 
 async def users():
@@ -74,7 +77,6 @@ async def users():
         asyncio.sleep(3600 * 10)
         global waiting_for_limit
         waiting_for_limit = True
-        # TODO send notification
 
     return usernames
 
@@ -82,6 +84,7 @@ def main(items=None):
     process = ProcessManager(preprocess=users, func=scrape_page_along_tree, items=urls, check_function=is_working, timeout=300)
     asyncio.run(process.run())
     logger.success("All archives downloaded")
+    send_message("All archives downloaded", title="Arcanum")
 
 if __name__ == "__main__":
     import archive_links

@@ -18,6 +18,10 @@ dependencies = [
     "checksumdir>=1.2.0",
     "setuptools>=75.8.0",
     "xxhash>=3.5.0",
+    "pypushover",
 ]
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.uv.sources]
+pypushover = { git = "https://github.com/MarcellGranat/pypushover/" }
