@@ -15,7 +15,7 @@ async def get_downloads_last_24h(username: str = "unknown") -> int:
     last_24h = datetime.now() - timedelta(days=1)
     count = 0
 
-    async with aiofiles.open("download_log.json", "r") as file:
+    async with aiofiles.open("download_log.json", "r", encoding="utf-8") as file:
         async for line in file:
             record = json.loads(line.strip())
             log_entry = eval(record["record"]["message"])
@@ -28,11 +28,13 @@ async def get_downloads_last_24h(username: str = "unknown") -> int:
 
 async def download_from_to(page, start: int, end: int, path: str) -> None:
     # type to the fields
+    await asyncio.sleep(0.5) 
     await page.get_by_label("Oldalak mentése").get_by_role("button").click()
     await page.get_by_role("spinbutton", name="Mettől:").fill(str(start))
     await page.get_by_role("spinbutton", name="Meddig:").fill(str(end))
 
     # click the save button
+    await asyncio.sleep(0.5)
     async with page.expect_download() as download_info:
         async with page.expect_popup() as page1_info:
             await page.get_by_role("button", name="Mentés").click()
@@ -87,13 +89,22 @@ async def generate_blocks(
       include_header: whether to include the header block (first block might not start at page 1)
       max_click: the maximum number of clicks to perform (only for testing)
     """
-    buttons = await page.locator(
-        'xpath=//*[contains(@class, "MuiTreeItem-label")]'
-    ).all()
-    if max_click is not None:
-        buttons = buttons[:(max_click)]
+    for attempt in range(3):
+        try:
+            buttons = await page.locator(
+                'xpath=//*[contains(@class, "MuiTreeItem-label")]'
+            ).all()
+            if max_click is not None:
+                buttons = buttons[:(max_click)]
+                await buttons[0].click(timeout=2000)
+            break
+        except Exception as e:
+            if attempt == 2:
+                logger.warning(f"Failed to click for the next block - {e}")
+                break
+            await asyncio.sleep(1)
+        
 
-    await buttons[0].click()
     block_start = await current_page(page)
     label = await buttons[0].text_content()
     if block_start != 1 and include_header:
