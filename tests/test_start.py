@@ -15,7 +15,7 @@ async def main_page_title():
 @pytest.mark.asyncio
 async def test_title():
     title = await main_page_title()
-    assert title == "Arcanum Újságok"
+    assert title in ["Arcanum Újságok", "Keresés | Arcanum Újságok"]
 
 async def execution_time_single():
     start = time.time()

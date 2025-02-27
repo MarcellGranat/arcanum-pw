@@ -13,14 +13,14 @@ cookie = read_cookies(next(generate_usernames()))
 
 @pytest.mark.asyncio
 async def test_download():
-    async with arcanum_page(cookie=cookie, headless=True) as page:
+    async with arcanum_page(cookie=cookie, headless=False) as page:
         await page.goto(
             "https://adt.arcanum.com/hu/view/PestiHirlap_1841-1/?pg=10&layout=s"
         )
 
         assert await current_page(page) == 11
 
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", mode="w") as temp_pdf:
             await download_from_to(page, 1, 1, temp_pdf.name)
             temp_pdf.seek(0)
 
