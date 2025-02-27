@@ -17,7 +17,7 @@ def generate_cookies():
       yield read_cookies(username)
 
 class arcanum_page(object):
-    def __init__(self, cookie=None, headless=False, slow_mo: int | None = None):
+    def __init__(self, cookie=None, headless=False, slow_mo: int | None = 500):
         self.cookie = cookie
         self.headless = headless
         self.slow_mo = slow_mo

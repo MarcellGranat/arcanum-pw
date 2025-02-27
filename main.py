@@ -14,7 +14,6 @@ waiting_for_limit = False
 
 async def scrape_page_along_tree(username, archive: tuple[str, str]):
     folder = "data/" + download.tidy_filename(archive[0])
-        
     if not os.path.exists(folder):
         os.makedirs(folder)
 
@@ -25,21 +24,20 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
     
     cookie = await read_cookie(username)
 
-    async with start_arcanum.arcanum_page(cookie, headless=False) as page:
-        logger.info(f"Going to {archive[1]}")
+    async with start_arcanum.arcanum_page(cookie, headless=True) as page:
+        logger.info(f"Going to {archive[1]} ({username})")
         while True:
             try:
                 await page.goto(archive[1], timeout=30000)
+                await asyncio.sleep(1)
             except Exception as e:
-                logger.error(f"Failed to navigate to {archive[1]}: {e}")
+                logger.error(f"Failed to navigate to {archive[1]} ({username}): {e}")
             await asyncio.sleep(2)
             try:
                 await download.download_along_tree(page, folder=folder, username=username)
-            except FileNotFoundError:
-                logger.warning(f"Failed to download {archive[0]}. Going to this page again.")
-                continue
             except Exception as e:
-                logger.error(f"Failed to download {archive[0]}: {e}")
+                logger.error(f"Failed to download {archive[0]} ({username}): {e}")
+                continue
             logger.success(f"{archive[0]} finished")
             # ! write a single txt file in the folder > signal that the whole archive is downloaded
             with open(f"{folder}/archivename.txt", "w") as f:
@@ -79,8 +77,11 @@ async def parallel_scrape_page_along_tree(tuples_list):
     if not usernames:
         logger.error("No users with download limit available")
         asyncio.sleep(3600 * 10)
+        global waiting_for_limit
+        waiting_for_limit = True
         # TODO send notification
     
+    logger.info(f"Using users: {usernames}")
     await parallel_execution.parallel_exec(func=scrape_page_along_tree, configs=usernames, items=tuples_list)
     logger.success("All archives downloaded")
 
