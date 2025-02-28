@@ -12,38 +12,24 @@ async def wait_and_add(delay, item):
     return result
 
 async def always_rerun():
-    await asyncio.sleep(5)
     return True  # Change this to True to stop the process after 5 seconds
 
 @pytest.mark.asyncio
-async def test_parallel_exec():
+async def test_restart():
     
-    items = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'imbe']
-    delays = [1, 3]
+    items = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig'] 
+    delays = [4, 5]
     
-    def preprocess():
-        return delays
-    
-    process = ProcessManager(preprocess=preprocess, func=wait_and_add, items=items, check_function=always_rerun, timeout=5)
-    results = await process.run()
-    
-    assert results == ['1apple', '1cherry', '3banana', '1date', '1fig', '1grape', '3elderberry', '1honeydew', '3imbe']
+    n_restart = 0
 
-async def visit_page(username, url):
-    async with arcanum_page(headless=True, slow_mo=2000) as page:
-        await page.goto(url)
-        title = await page.title()
-        print(f"{username} visited: {title} ({url})")
-        return f"{username} visited: {title} ({url})"
+    async def preprocess():
+        nonlocal n_restart
+        output = [_ + n_restart for _ in delays]
+        n_restart += 2
+        return output
     
-@pytest.mark.asyncio
-async def test_parallel_exec_arcanum():
-    urls = [url for name, url in generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/")][:8]
-    def users():
-        yield from ["bear", "bull", "cat"]
-
-    usernames = list(users())
-    process = ProcessManager(preprocess=users, func=visit_page, items=urls, check_function=None, timeout=5)
+    process = ProcessManager(preprocess=preprocess, func=wait_and_add, items=items, check_function=always_rerun, timeout=9)
+    expected_results = ['4apple', '5banana', '4cherry', '6date', '7elderberry', '8fig']
     results = await process.run()
     print(results)
-    assert all(username in result for username, result in zip(usernames, results))
+    assert results == expected_results
