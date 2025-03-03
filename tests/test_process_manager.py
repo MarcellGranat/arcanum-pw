@@ -1,8 +1,6 @@
 import asyncio
 import pytest
 from process_manager import ProcessManager
-from start_arcanum import arcanum_page
-from archive_links import generate_archive_links
 
 async def wait_and_add(delay, item):
     """Wait for a specified delay and then concatenate the delay and item."""
@@ -22,14 +20,14 @@ async def test_restart():
     
     n_restart = 0
 
-    async def preprocess():
+    def preprocess():
         nonlocal n_restart
         output = [_ + n_restart for _ in delays]
         n_restart += 2
         return output
     
     process = ProcessManager(preprocess=preprocess, func=wait_and_add, items=items, check_function=always_rerun, timeout=9)
-    expected_results = ['4apple', '5banana', '4cherry', '6date', '7elderberry', '8fig']
+    # * puts to the end of the queue if the task is cancelled > 2nd 5 sec is over 9 sec > 'date' is at the end of the queue
+    expected_results = ['4apple', '5banana', '4cherry', '6fig', '7elderberry', '8date']
     results = await process.run()
-    print(results)
     assert results == expected_results

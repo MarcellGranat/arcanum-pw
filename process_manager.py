@@ -1,7 +1,5 @@
 import asyncio
 from loguru import logger
-import xxhash
-import os
 
 logger.add("logs")
 
@@ -32,9 +30,14 @@ class ProcessManager:
                 if (await self.queue).empty():
                     return
                 item = await (await self.queue).get()
-                result = await self.func(config, item)
-                self.results.append(result)
-                (await self.queue).task_done()
+                try:
+                    result = await self.func(config, item)
+                    self.results.append(result)
+                    (await self.queue).task_done()
+                except asyncio.CancelledError:
+                    # Put the item back into the queue if the task is cancelled
+                    await (await self.queue).put(item)
+                    raise
             except asyncio.CancelledError:
                 break
 
@@ -42,7 +45,7 @@ class ProcessManager:
     async def configs(self):
         """Execute tasks in parallel with specified delays."""
         return self.preprocess()
-    
+
     async def create_workers(self):
         """Create workers."""
         configs = await self.configs
@@ -71,21 +74,3 @@ class ProcessManager:
         # Wait for all tasks to complete
         await asyncio.gather(*self.tasks)
         return self.results
-    
-def hash_file(filepath: str, hasher=xxhash.xxh64()):
-    """Compute a fast hash for a given file."""
-    hasher = hasher.copy()
-    with open(filepath, "rb") as f:
-        while chunk := f.read(8192):
-            hasher.update(chunk)
-    return hasher.hexdigest()
-
-def hash_folder(folder_path: str = "data"):
-    """Compute a combined hash of all files in a folder (recursively)."""
-    hasher = xxhash.xxh64()
-    for root, _, files in os.walk(folder_path):
-        for file in sorted(files):  # Sorting ensures consistent order
-            file_path = os.path.join(root, file)
-            file_hash = hash_file(file_path)
-            hasher.update(file_hash.encode())  # Aggregate hashes
-    return hasher.hexdigest()
