@@ -4,13 +4,14 @@ import download
 import os
 from manage_cookie import init_cookies, read_cookie
 from loguru import logger
-from process_manager import ProcessManager, hash_folder
-import time
+from process_manager import ProcessManager
+from hashing import hash_file
 from pypushover import notify_after_elapsed_time, send_message
+from limit import limit_reached
+
 
 logger.add("logs")
 
-waiting_for_limit = False
 
 async def scrape_page_along_tree(username, archive: tuple[str, str]):
     folder = "data/" + download.tidy_filename(archive[0])
@@ -18,10 +19,10 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
         os.makedirs(folder)
 
     # ! txt signals that the whole archive is downloaded
-    if os.path.exists(f"{folder}/archivename.txt") and len(os.listdir(folder)) > 1: 
+    if os.path.exists(f"{folder}/archivename.txt") and len(os.listdir(folder)) > 1:
         logger.info(f"{archive[0]} already finished")
         return
-    
+
     cookie = await read_cookie(username)
 
     async with start_arcanum.arcanum_page(cookie, headless=False) as page:
@@ -34,7 +35,9 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
                 logger.error(f"Failed to navigate to {archive[1]} ({username}): {e}")
             await asyncio.sleep(2)
             try:
-                await download.download_along_tree(page, folder=folder, username=username)
+                await download.download_along_tree(
+                    page, folder=folder, username=username
+                )
             except Exception as e:
                 logger.error(f"Failed to download {archive[0]} ({username}): {e}")
                 continue
@@ -44,52 +47,84 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
                 f.write(archive[0])
             break
 
-def is_working():
-    notify_after_elapsed_time("Still scraping", title="Arcanum", elapsed_time=36000, init=True)
-    global waiting_for_limit
-    if waiting_for_limit:
-        time.sleep(3600 * 4)
-        logger.info("Waiting for download limit to reset")
-        waiting_for_limit = False
 
-    return hash_folder(folder_path="data")
+download_hash = hash_file("download_log.json")
 
-async def users():
-    usernames = []
 
-    cookies = await init_cookies(check=True, force=False)
+async def process_stopped() -> bool:
+    global download_hash
+    new_hash = hash_file("download_log.json")
 
-    if not cookies:
-        logger.error("No cookies found")
-        raise Exception("No cookies found")
+    if new_hash != download_hash:
+        download_hash = new_hash
+        notify_after_elapsed_time(
+            "Still scraping", title="Arcanum", elapsed_time=3600 * 6, init=True
+        )
+        return False
+    return True
 
-    for user in cookies:
-        if await download.get_downloads_last_24h(user) > 4700:
-            logger.info(f"User {user} has reached the download limit")
-            continue
-        if len(usernames) >= 2:
-            break # Should use maximum 2 users at a time
 
-        usernames.append(user)
+users = None
 
-    if not usernames:
-        logger.error("No users with download limit available")
-        asyncio.sleep(3600 * 10)
-        global waiting_for_limit
-        waiting_for_limit = True
 
-    return usernames
+async def pick_users(users: list[str], n: int = 2) -> list[str]:
+    picked = []
+    for user in users:
+        if not await limit_reached(user):
+            logger.info(f"User {user} is available")
+            picked.append(user)
+        if len(picked) >= n:
+            return picked
+
+    return picked if picked else None
+
+
+async def preprocess():
+    global users
+    current_users = await pick_users(users)
+    while not current_users:
+        if current_users:
+            return current_users
+        else:
+            logger.info("No users available")
+            await asyncio.sleep(3600 * 8)
+            current_users = await pick_users(users)
+    return current_users
+
 
 def main(items=None):
-    process = ProcessManager(preprocess=users, func=scrape_page_along_tree, items=urls, check_function=is_working, timeout=300)
+    global users
+    users = asyncio.run(init_cookies(check=True, force=False))
+
+    process = ProcessManager(
+        preprocess=preprocess,
+        func=scrape_page_along_tree,
+        items=urls,
+        check_function=process_stopped,
+        timeout=60,
+    )
     asyncio.run(process.run())
     logger.success("All archives downloaded")
     send_message("All archives downloaded", title="Arcanum")
 
+
 if __name__ == "__main__":
     import archive_links
-    urls30s = list(archive_links.generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1930#collection-contents"))
-    urls20s = list(archive_links.generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1920#collection-contents"))
-    urls10s = list(archive_links.generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1910#collection-contents"))
+
+    urls30s = list(
+        archive_links.generate_archive_links(
+            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1930#collection-contents"
+        )
+    )
+    urls20s = list(
+        archive_links.generate_archive_links(
+            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1920#collection-contents"
+        )
+    )
+    urls10s = list(
+        archive_links.generate_archive_links(
+            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1910#collection-contents"
+        )
+    )
     urls = urls30s + urls20s + urls10s
     main(items=urls)
