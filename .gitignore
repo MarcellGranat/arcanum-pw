@@ -20,3 +20,4 @@ wip*
 *log.json
 tests/test_cookies/
 logs
+log_limit.json
