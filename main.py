@@ -25,7 +25,7 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
 
     cookie = await read_cookie(username)
 
-    async with start_arcanum.arcanum_page(cookie, headless=False) as page:
+    async with start_arcanum.arcanum_page(cookie, headless=True) as page:
         logger.info(f"Going to {archive[1]} ({username})")
         while True:
             try:
@@ -87,7 +87,7 @@ async def preprocess():
             return current_users
         else:
             logger.info("No users available")
-            await asyncio.sleep(3600 * 8)
+            await asyncio.sleep(3600)
             current_users = await pick_users(users)
     return current_users
 
@@ -101,7 +101,7 @@ def main(items=None):
         func=scrape_page_along_tree,
         items=urls,
         check_function=process_stopped,
-        timeout=60,
+        timeout=600,
     )
     asyncio.run(process.run())
     logger.success("All archives downloaded")
