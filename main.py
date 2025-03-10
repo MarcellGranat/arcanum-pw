@@ -111,20 +111,10 @@ def main(items=None):
 if __name__ == "__main__":
     import archive_links
 
-    urls30s = list(
-        archive_links.generate_archive_links(
-            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1930#collection-contents"
-        )
-    )
-    urls20s = list(
-        archive_links.generate_archive_links(
-            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1920#collection-contents"
-        )
-    )
-    urls10s = list(
-        archive_links.generate_archive_links(
-            "https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1910#collection-contents"
-        )
-    )
-    urls = urls30s + urls20s + urls10s
+    urls = []
+    decades = archive_links.generate_archive_decades("https://adt.arcanum.com/hu/collection/Nepszava/")
+    for decade_name, decade_link in decades:
+        print(decade_link)
+        urls.extend(list(archive_links.generate_archive_links(decade_link)))
+
     main(items=urls)
