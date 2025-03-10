@@ -20,6 +20,7 @@ dependencies = [
     "xxhash>=3.5.0",
     "pypushover",
     "dropbox>=12.0.2",
+    "tqdm>=4.67.1",
 ]
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"

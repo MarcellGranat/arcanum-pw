@@ -2,6 +2,7 @@ import dropbox
 import os
 from dropbox.files import WriteMode
 import dotenv
+from tqdm import tqdm
 
 dotenv.load_dotenv(".venv/.env")
 
@@ -19,7 +20,7 @@ class DropboxUpload:
     def upload_folder(self, folder_from, folder_to):
         skipped_files = 0
 
-        for root, dirs, files in os.walk(folder_from):
+        for root, dirs, files in tqdm(os.walk(folder_from)):
             for filename in files:
                 local_path = os.path.join(root, filename)
                 relative_path = os.path.relpath(local_path, folder_from)
