@@ -1,7 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
-def generate_archive_links(url: str) -> list[str]:
+def generate_archive_links(url: str) -> list[str, str]:
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     anchors = soup.select('#content-tree a:nth-child(2)')
@@ -13,15 +14,22 @@ def generate_archive_links(url: str) -> list[str]:
         else:
             yield archive_name, archive_link
 
-def generate_archive_decades(url: str) -> list[str]:
+def generate_archive_decades(url: str) -> list[str, str]:
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    anchors = soup.select('p:nth-child(5) .mb-2')
+    anchors = soup.select('#page-main-content .btn-outline-primary')
+    used_links = []
+    pattern = re.compile(r"collection/(.*)/") # nepszava
+    archive_name = re.search(pattern, url).group(1)
+
     for a in anchors:
         decade_link = a.get('href')
         decade_name = a.text.strip()
+        if decade_link in used_links:
+            continue
+        used_links.append(decade_link)
         if not decade_link.startswith("https://adt.arcanum.com"):
-            yield decade_name, f"https://adt.arcanum.com/hu/{decade_link}" # FIXME
+            yield decade_name, f"https://adt.arcanum.com/hu/collection/{archive_name}/{decade_link}"
         else:
             yield decade_name, decade_link
     
