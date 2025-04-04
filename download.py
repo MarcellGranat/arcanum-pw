@@ -48,7 +48,7 @@ async def download_from_to(page, start: int, end: int, path: str) -> None:
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1}: Failed to save file - {e}")
                 await asyncio.sleep(2)  # Wait before retrying
-            if attempt == 4:
+            if attempt == 2:
                 raise FileNotFoundError(f"Failed to save file after 5 attempts - {path}")
     await page1.close()
 
