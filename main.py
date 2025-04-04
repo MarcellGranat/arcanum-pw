@@ -19,9 +19,9 @@ async def scrape_page_along_tree(username, archive: tuple[str, str]):
         os.makedirs(folder)
 
     # ! txt signals that the whole archive is downloaded
-    if os.path.exists(f"{folder}/archivename.txt") and len(os.listdir(folder)) > 1:
-        logger.info(f"{archive[0]} already finished")
-        return
+    # if os.path.exists(f"{folder}/archivename.txt") and len(os.listdir(folder)) > 1:
+    #     logger.info(f"{archive[0]} already finished")
+    #     return
 
     cookie = await read_cookie(username)
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     import archive_links
 
     urls = []
-    decades = archive_links.generate_archive_decades("https://adt.arcanum.com/hu/collection/Nepszava/")
+    decades = archive_links.generate_archive_decades("https://adt.arcanum.com/hu/collection/PestiHirlap/")
     for decade_name, decade_link in decades:
         print(decade_link)
         urls.extend(list(archive_links.generate_archive_links(decade_link)))

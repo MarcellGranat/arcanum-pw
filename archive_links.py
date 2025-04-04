@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import re
 from typing import Generator, Tuple
 
-def send_request(url):
+def make_request(url):
     # MagyarCompass
     # GET https://adt.arcanum.com/hu/collection/MagyarCompass/
 
@@ -28,7 +28,7 @@ def send_request(url):
 
 
 def generate_archive_links(url: str) -> Generator[Tuple[str, str], None, None]:
-    response = send_request(url)
+    response = make_request(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     anchors = soup.select('#content-tree a:nth-child(2)')
     for a in anchors:
@@ -40,7 +40,7 @@ def generate_archive_links(url: str) -> Generator[Tuple[str, str], None, None]:
             yield archive_name, archive_link
 
 def generate_archive_decades(url: str) -> list[str, str]:
-    response = requests.get(url)
+    response = make_request(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     anchors = soup.select('#page-main-content .btn-outline-primary')
     used_links = []
@@ -59,12 +59,14 @@ def generate_archive_decades(url: str) -> list[str, str]:
             yield decade_name, decade_link
     
 if __name__ == "__main__":
-    pesti_hirlap = "https://adt.arcanum.com/hu/collection/PestiHirlap/"
-    for link in generate_archive_links(pesti_hirlap):
-        print(link)
+    pesti_hirlap = "https://adt.arcanum.com/hu/collection/Nepszava/"
+    # for link in generate_archive_links(pesti_hirlap):
+    #     print(link)
+    # for link in generate_archive_links(pesti_hirlap):
+    #     print(link)
 
     for link in generate_archive_decades(pesti_hirlap):
         print(link)
     
-    for link in generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1870#collection-contents"):
-        print(link)
+    # for link in generate_archive_links("https://adt.arcanum.com/hu/collection/PestiHirlap/?decade=1870#collection-contents"):
+    #     print(link)
