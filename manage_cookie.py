@@ -125,7 +125,11 @@ async def cookie_from_txt(txt_path: str, save=True):
 
             list_of_cookies.append(cookie_item)
 
-    username = await logged_in_as(list_of_cookies)
+    try:
+        username = await logged_in_as(list_of_cookies)
+    except ValueError:
+        logger.error(f"Cookie for {txt_path} is invalid")
+        return None
     filename = username.replace("@", "_").removesuffix(".hu")
     if save:
         logger.info(f"Saving cookie for {username} to {cookie_folder}/{filename}.json")
