@@ -1,14 +1,17 @@
-import start_arcanum
 import asyncio
-import download
 import os
-from manage_cookie import init_cookies, read_cookie
-from loguru import logger
-from process_manager import ProcessManager
-from hashing import hash_file
-from pypushover import notify_after_elapsed_time, send_message
-from limit import limit_reached
 
+from loguru import logger
+from pypushover import Pigeon, send_message
+
+import download
+import start_arcanum
+from hashing import hash_file
+from limit import limit_reached
+from manage_cookie import init_cookies, read_cookie
+from process_manager import ProcessManager
+
+Pigeon = Pigeon(wait_time=3600 * 24) # daily log
 
 logger.add("logs")
 
@@ -57,9 +60,7 @@ async def process_stopped() -> bool:
 
     if new_hash != download_hash:
         download_hash = new_hash
-        notify_after_elapsed_time(
-            "Still scraping", title="Arcanum", elapsed_time=3600 * 6, init=True
-        )
+        pigeon(title="Arcanum", message="Still scraping")
         return False
     return True
 
