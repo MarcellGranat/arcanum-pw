@@ -13,7 +13,7 @@ from process_manager import ProcessManager
 
 Pigeon = Pigeon(wait_time=3600 * 24) # daily log
 
-logger.add("logs")
+logger.add("logs", rotation = "1 week")
 
 
 async def scrape_page_along_tree(username, archive: tuple[str, str]):

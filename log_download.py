@@ -6,7 +6,8 @@ logger.add(
     serialize=True, 
     enqueue=True, 
     level="INFO", 
-    filter=lambda record: record["module"] == "log_download"
+    filter=lambda record: record["module"] == "log_download",
+    rotation="1 week",
 )
 
 async def log_download(username: str = "unknown", page_count: int = 0, path: str = "") -> None:

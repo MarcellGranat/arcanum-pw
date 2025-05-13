@@ -8,7 +8,7 @@ import asyncio
 import json
 from log_download import log_download
 
-logger.add("logs")
+logger.add("logs", rotation="1 week")
 
 async def get_downloads_last_24h(username: str = "unknown") -> int:
     """Check the number of pages downloaded in the last 24 hours."""

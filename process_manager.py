@@ -1,7 +1,7 @@
 import asyncio
 from loguru import logger
 
-logger.add("logs")
+logger.add("logs", rotation="1 week")
 
 class ProcessManager:
     def __init__(self, preprocess, func, items, check_function=None, timeout=300):
