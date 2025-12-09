@@ -8,16 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
-.arcanum_secrets
+.log
+download_logs/*
+data/
 cookies/
-cookies_raw/
-*log
-*txt
-data*
-wip*
-*png
-.vscode*
-*log.json
-tests/test_cookies/
-logs
-log_limit.json
