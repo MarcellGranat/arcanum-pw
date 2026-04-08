@@ -1,9 +1,12 @@
-from playwright.sync_api import Page
 from time import sleep
-from .config import settings
-from pydantic import BaseModel
 from typing import Iterator
+
+from playwright.sync_api import Page
+from pydantic import BaseModel
+
 from .arcanum_page import tidy_filename
+from .config import settings
+
 
 class Block(BaseModel):
     start: int
@@ -14,12 +17,13 @@ class Block(BaseModel):
     @property
     def filename(self) -> str:
         if self.index is None:
-            raise ValueError("Index is not set for this block.")    
+            raise ValueError("Index is not set for this block.")
         return tidy_filename(f"{self.label}-{self.index}") + ".pdf"
-    
+
     @property
     def count(self) -> int:
         return self.end - self.start + 1
+
 
 def current_page(page: Page) -> int:
     button = page.locator("[class*='MuiInputBase-inputAdornedEnd']")
@@ -29,23 +33,26 @@ def current_page(page: Page) -> int:
     else:
         raise RuntimeError("Could not determine current page number.")
 
+
 def max_page(page: Page) -> int:
-    button = page.locator("[class*='MuiInputAdornment-root MuiInputAdornment-positionEnd']")
+    button = page.locator(
+        "[class*='MuiInputAdornment-root MuiInputAdornment-positionEnd']"
+    )
     value = button.text_content()
     if value:
         number_part = value.removeprefix("/ ")
         return int(number_part)
     else:
         raise RuntimeError("Could not determine maximum page number.")
-    
+
+
 def block_buttons(page: Page):
     tabpanel = page.get_by_role("tabpanel")
     buttons = tabpanel.get_by_role("treeitem")
     return buttons
 
-def blocks(
-    page: Page, include_header: bool = True
-) -> Iterator[Block]:
+
+def blocks(page: Page, include_header: bool = True) -> Iterator[Block]:
     """
     Generate blocks of pages by clicking on the tree items.
 
@@ -57,6 +64,8 @@ def blocks(
 
     for attempt in range(3):
         try:
+            page.get_by_role("tab").nth(1).click()
+            sleep(1)
             tabpanel = page.get_by_role("tabpanel")
             buttons = tabpanel.get_by_role("treeitem")
             if not buttons.count():
@@ -64,7 +73,7 @@ def blocks(
             buttons.nth(0).click(timeout=2000)
             break
         except Exception as e:
-            if attempt == 2:    
+            if attempt == 2:
                 settings.logger.warning(f"Failed to click for the next block - {e}")
                 break
 
@@ -72,12 +81,9 @@ def blocks(
 
     if not buttons:
         raise RuntimeError("No block buttons found after retries.")
-    
+
     button_count = buttons.count()
 
-
-
-        
     block_start = current_page(page)
     label = buttons.nth(0).text_content()
     if block_start != 1 and include_header:
@@ -93,9 +99,8 @@ def blocks(
 
     yield Block(start=block_start, end=max_page(page), label=label)
 
-def download_blocks(
-    page: Page, include_header: bool = True
-) -> Iterator[Block]:
+
+def download_blocks(page: Page, include_header: bool = True) -> Iterator[Block]:
     for block in blocks(page, include_header=include_header):
         start = block.start
         for i in range(1, 100):
@@ -104,4 +109,3 @@ def download_blocks(
             if end == block.end:
                 break
             start = end + 1
-            
